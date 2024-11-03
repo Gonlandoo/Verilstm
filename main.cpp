@@ -412,14 +412,6 @@ int main()
 
     // Allocate variables to protoboard
     // The strings (like "x") are only for debugging purposes
-    // 公共变量的连接
-    // 变量pb_Freivalds_r与protoboard连接
-    // for(int i=0;i<4*hidden_size;i++)
-    // {
-    //     string pi = "vector r"+to_string(i)+" "+to_string(i);
-    //     pb_Freivalds_r[i].allocate(pb, pi);
-    //     pb.val(pb_Freivalds_r[i])=Freivalds_r[i];
-    // }
     // 变量pb_sys2(+bias后的结果,ihl0层的输出)与protoboard连接
     for(int i=0;i<4*hidden_size;i++)
     {
@@ -430,7 +422,6 @@ int main()
             pb.val(pb_out[i][j])=ihl0_out[i][j];
         }
     }
-    cout<<"test sys2 val"<<endl;
 
     // 私有变量的连接
     // 变量pb_weight与protoboard连接
@@ -443,7 +434,7 @@ int main()
             pb.val(pb_weight[i][j])=ihl0_weight[i][j];
         }
     }
-    cout<<"test weight val"<<endl;
+
     // 变量pb_input与protoboard连接
     for(int i=0;i<4*hidden_size;i++)
     {
@@ -454,21 +445,6 @@ int main()
             pb.val(pb_input[i][j])=ihl0_input[i][j];
         }
     }
-    cout<<"test input val"<<endl;
-    // // 输入集*随机向量r的结果与protoboard连接
-    // for(int i=0;i<input_size;i++)
-    // {
-    //     string pi = "Input*r"+to_string(i)+" "+to_string(i);
-    //     pb_vMulr[i].allocate(pb, pi);
-    //     pb.val(pb_vMulr[i])=vMulr_sys[i];
-    // }
-    // // weight* (输入集*随机向量r的结果)与protoboard连接
-    // for(int i=0;i<4*hidden_size;i++)
-    // {
-    //     string pi = "weight*Input*r_sys"+to_string(i)+" "+to_string(i);
-    //     pb_vInMulr_sys[i].allocate(pb, pi);
-    //     pb.val(pb_vInMulr_sys[i])=wInMulr_sys[i];
-    // }
 
     // weight*input的结果与protoboard连接
     for(int i=0;i<4*hidden_size;i++)
@@ -480,7 +456,7 @@ int main()
             pb.val(pb_sys1[i][j])=ihl0_sys1[i][j];
         }
     }
-    // cout<<"test sys1 val"<<endl;
+    
     for ( int i = 0; i < 4*hidden_size; i++ )
     {   
         for(int j = 0; j < 4*hidden_size * input_size; j++)
@@ -490,7 +466,7 @@ int main()
             pb.val(pb_sys11[i][j]) = ihl0_sys11[i][j]; 
         }
     }
-    // cout<<"test sys11 val"<<endl;
+    
     for ( int i = 0; i < 4*hidden_size; i++ )
     {   
         for(int j = 0; j < 9*4*hidden_size; j++)
@@ -500,15 +476,7 @@ int main()
             pb.val(pb_sys12[i][j]) = ihl0_sys12[i][j]; 
         }
     }
-    // cout<<"test sys12 val"<<endl;
 
-    // // weight*input *r与protoboard连接
-    // for(int i=0;i<4*hidden_size;i++)
-    // {
-    //     string pi = "weight*Input*r"+to_string(i)+" "+to_string(i);
-    //     pb_wInMulr[i].allocate(pb, pi);
-    //     pb.val(pb_wInMulr[i])=wInMulr[i];
-    // }
     // 偏置量与protoboard连接
     for(int i=0;i<4*hidden_size;i++)
     {
@@ -519,12 +487,12 @@ int main()
 
 
     // input and the rest is private input,public num first 6480
-    cout<<"set_input size:"<<endl;
+    cout<<"set_input size"<<endl;
     pb.set_input_sizes(6400);
 
     // Add R1CS constraints to protoboard
 
-    // weigt*input
+    //weigt*input
     for (int i = 0; i < 4*hidden_size; i++)
     {
         for(int j =0 ;j<4*hidden_size ;j++)
@@ -532,58 +500,68 @@ int main()
             for (int k = 0; k < input_size; k++)
             {
                 ihl0_sys11[i][j * input_size + k]=ihl0_weight[i][k]*ihl0_input[j][k];
+                // pb.add_r1cs_constraint(r1cs_constraint<FieldT>(pb_weight[i][k], pb_input[j][k], pb_sys1[i][j * input_size + k]));
                 pb.add_r1cs_constraint(r1cs_constraint<FieldT>(pb_weight[i][k], pb_input[j][k], pb_sys1[i][j * input_size + k]));
             }
         }
         
     }
-    cout<<"test add_cons w*in"<<endl;
-    // weight*input形成的中间变量求和
-    for (int i = 0; i < 4*hidden_size; i++)
-    {
-        for (int j = 0; j < 4*hidden_size; j++)
-        {
-            for(int k=0;k<input_size-1;k++)
-            {
-                if (k==0)
-                {
-                    pb.add_r1cs_constraint(r1cs_constraint<FieldT>(pb_sys11[i][j * input_size + k]+pb_sys11[i][j * input_size + k +1], 1, pb_sys12[i][j*input_size+k]));
-                }
-                else
-                {
-                    pb.add_r1cs_constraint(r1cs_constraint<FieldT>(pb_sys12[i][j * input_size + k-1]+pb_sys11[i][j*input_size + k +1], 1, pb_sys12[i][j * input_size + k]));
-                }
-            }
+
+    // // weight*input形成的中间变量求和
+    // for (int i = 0; i < 4*hidden_size; i++)
+    // {
+    //     for (int j = 0; j < 4*hidden_size; j++)
+    //     {
+    //         for(int k=0;k<input_size-1;k++)
+    //         {
+    //             if (k==0)
+    //             {
+    //                 pb.add_r1cs_constraint(r1cs_constraint<FieldT>(pb_sys11[i][j * input_size + k]+pb_sys11[i][j * input_size + k +1], 1, pb_sys12[i][j*input_size+k]));
+    //             }
+    //             else
+    //             {
+    //                 pb.add_r1cs_constraint(r1cs_constraint<FieldT>(pb_sys12[i][j * input_size + k-1]+pb_sys11[i][j*input_size + k +1], 1, pb_sys12[i][j * input_size + k]));
+    //             }
+    //         }
             
-        }
-    }
-    cout<<"test add_cons w*in+bias"<<endl;
+    //     }
+    // }
 
-    // weight*input+bias
-    for (int i = 0; i < 4*hidden_size; i++)
-    {
-        for (int j = 0; j < 4*hidden_size; j++)
-        {
-            pb.add_r1cs_constraint(r1cs_constraint<FieldT>(pb_sys12[i][j*(input_size-1)+input_size-2]+pv_bias[j], 1, pb_out[i][j]));
-        }
-    }
+    // // weight*input+bias
+    // for (int i = 0; i < 4*hidden_size; i++)
+    // {
+    //     for (int j = 0; j < 4*hidden_size; j++)
+    //     {
+    //         pb.add_r1cs_constraint(r1cs_constraint<FieldT>(pb_sys12[i][j*input_size+input_size-2]+pv_bias[j], 1, pb_out[i][j]));
+    //     }
+    // }
 
-    
+    struct timeval startSetup,EndSetup,startGenProof,EndGenProof,StartVerify,EndVerify;
+    unsigned long setupTime,proofTime,verifyTime;
     
     const r1cs_constraint_system<FieldT> constraint_system = pb.get_constraint_system();
 
     // generate keypair
+    gettimeofday(&startSetup,NULL);
     const r1cs_gg_ppzksnark_keypair<default_r1cs_gg_ppzksnark_pp> keypair = r1cs_gg_ppzksnark_generator<default_r1cs_gg_ppzksnark_pp>(constraint_system);
+    gettimeofday(&EndSetup,NULL);
     
     // generate proof
+    // gettimeofday(&startGenProof,NULL);
     const r1cs_gg_ppzksnark_proof<default_r1cs_gg_ppzksnark_pp> proof = r1cs_gg_ppzksnark_prover<default_r1cs_gg_ppzksnark_pp>(keypair.pk, pb.primary_input(), pb.auxiliary_input());
+    // gettimeofday(&EndGenProof,NULL);
 
     // verify
+    // gettimeofday(&StartVerify,NULL);
     bool verified = r1cs_gg_ppzksnark_verifier_strong_IC<default_r1cs_gg_ppzksnark_pp>(keypair.vk, pb.primary_input(), proof);
+    // gettimeofday(&EndVerify,NULL);
 
     cout << "Number of R1CS constraints: " << constraint_system.num_constraints() << endl;
     // cout << "Primary (public) input: " << pb.primary_input() << endl;
     // cout << "Auxiliary (private) input: " << pb.auxiliary_input() << endl;
     cout << "Verification status: " << verified << endl;
+
+    setupTime = 1000000 * (EndSetup.tv_sec-startSetup.tv_sec)+EndSetup.tv_usec-startSetup.tv_usec;
+    cout<<"setup time:"<<setupTime/1000;
 
 }
